@@ -1,15 +1,11 @@
-[gd_scene load_steps=2 format=3 uid="uid://hud_scene"]
+[gd_scene format=3]
 
 [ext_resource type="Script" path="res://scripts/hud.gd" id="1"]
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1")
 
-; ── Speed display (top-left) ──────────────────────────────────────────────────
 [node name="SpeedLabel" type="Label" parent="."]
-anchors_preset = 5
-anchor_left = 0.0
-anchor_top = 0.0
 offset_left = 20.0
 offset_top = 20.0
 offset_right = 200.0
@@ -17,11 +13,9 @@ offset_bottom = 56.0
 text = "0 km/h"
 theme_override_font_sizes/font_size = 28
 
-; ── Race timer (top-center) ───────────────────────────────────────────────────
 [node name="TimerLabel" type="Label" parent="."]
-anchors_preset = 5
 anchor_left = 0.5
-anchor_top = 0.0
+anchor_right = 0.5
 offset_left = -80.0
 offset_top = 20.0
 offset_right = 80.0
@@ -30,11 +24,9 @@ text = "0:00.00"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 32
 
-; ── Best time (top-right) ─────────────────────────────────────────────────────
 [node name="BestTimeLabel" type="Label" parent="."]
-anchors_preset = 5
 anchor_left = 1.0
-anchor_top = 0.0
+anchor_right = 1.0
 offset_left = -220.0
 offset_top = 20.0
 offset_right = -20.0
@@ -43,11 +35,9 @@ text = "Best: --:--"
 horizontal_alignment = 2
 theme_override_font_sizes/font_size = 22
 
-; ── Checkpoint counter (top-right, below best time) ───────────────────────────
 [node name="CheckpointLabel" type="Label" parent="."]
-anchors_preset = 5
 anchor_left = 1.0
-anchor_top = 0.0
+anchor_right = 1.0
 offset_left = -220.0
 offset_top = 60.0
 offset_right = -20.0
@@ -56,12 +46,12 @@ text = ""
 horizontal_alignment = 2
 theme_override_font_sizes/font_size = 20
 
-; ── Countdown overlay (center-screen) ────────────────────────────────────────
 [node name="CountdownLabel" type="Label" parent="."]
 visible = false
-anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
 offset_left = -60.0
 offset_top = -60.0
 offset_right = 60.0
@@ -72,12 +62,12 @@ vertical_alignment = 1
 theme_override_font_sizes/font_size = 96
 modulate = Color(1, 0.9, 0.1, 1)
 
-; ── Banner (finish / wipeout messages, lower-center) ─────────────────────────
 [node name="Banner" type="Label" parent="."]
 visible = false
-anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.75
+anchor_right = 0.5
+anchor_bottom = 0.75
 offset_left = -400.0
 offset_top = -36.0
 offset_right = 400.0

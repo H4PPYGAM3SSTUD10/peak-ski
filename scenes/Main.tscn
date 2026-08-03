@@ -1,9 +1,30 @@
-[gd_scene load_steps=5 format=3 uid="uid://main_scene"]
+[gd_scene format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/Mountain.tscn" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/Skier.tscn" id="2"]
 [ext_resource type="PackedScene" path="res://scenes/HUD.tscn" id="3"]
 [ext_resource type="PackedScene" path="res://scenes/RaceChallenge.tscn" id="4"]
+[ext_resource type="Script" path="res://scripts/camera_rig.gd" id="5"]
+
+[sub_resource type="ProceduralSkyMaterial" id="sky_mat_1"]
+sky_top_color = Color(0.3, 0.5, 0.85, 1)
+sky_horizon_color = Color(0.85, 0.9, 1, 1)
+ground_bottom_color = Color(0.7, 0.75, 0.8, 1)
+ground_horizon_color = Color(0.85, 0.9, 1, 1)
+sun_angle_max = 30.0
+
+[sub_resource type="Sky" id="sky_1"]
+sky_material = SubResource("sky_mat_1")
+
+[sub_resource type="Environment" id="env_1"]
+background_mode = 2
+sky = SubResource("sky_1")
+ambient_light_color = Color(0.7, 0.8, 1, 1)
+ambient_light_energy = 0.4
+fog_enabled = true
+fog_light_color = Color(0.75, 0.82, 0.95, 1)
+fog_density = 0.003
+fog_aerial_perspective = 0.5
 
 [node name="Main" type="Node3D"]
 
@@ -22,28 +43,15 @@ shadow_enabled = true
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 80, 0)
 
 [node name="CameraRig" type="Node3D" parent="."]
-script = ExtResource("camera_rig_script")
+script = ExtResource("5")
+target = NodePath("../Skier")
+
+[node name="SpringArm3D" type="SpringArm3D" parent="CameraRig"]
+spring_length = 8.0
+
+[node name="Camera3D" type="Camera3D" parent="CameraRig/SpringArm3D"]
+fov = 75.0
 
 [node name="RaceChallenge" parent="." instance=ExtResource("4")]
 
 [node name="HUD" parent="." instance=ExtResource("3")]
-
-[sub_resource type="Environment" id="env_1"]
-background_mode = 2
-sky = SubResource("sky_1")
-ambient_light_color = Color(0.7, 0.8, 1, 1)
-ambient_light_energy = 0.4
-fog_enabled = true
-fog_light_color = Color(0.75, 0.82, 0.95, 1)
-fog_density = 0.003
-fog_aerial_perspective = 0.5
-
-[sub_resource type="Sky" id="sky_1"]
-sky_material = SubResource("sky_mat_1")
-
-[sub_resource type="ProceduralSkyMaterial" id="sky_mat_1"]
-sky_top_color = Color(0.3, 0.5, 0.85, 1)
-sky_horizon_color = Color(0.85, 0.9, 1, 1)
-ground_bottom_color = Color(0.7, 0.75, 0.8, 1)
-ground_horizon_color = Color(0.85, 0.9, 1, 1)
-sun_angle_max = 30.0
