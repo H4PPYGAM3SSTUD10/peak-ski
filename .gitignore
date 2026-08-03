@@ -1,0 +1,32 @@
+# Godot 4 — generated import cache (never check in)
+.godot/
+.import/
+
+# Export & build output
+export_presets.cfg
+*.pck
+*.exe
+*.apk
+*.aab
+*.ipa
+*.x86_64
+*.x86
+*.arm64-v8a
+*.armeabi-v7a
+*.dmg
+*.zip
+build/
+
+# Temporary / editor files
+*.tmp
+*.uid
+android/
+.mono/
+data_*/
+mono_crash.*.json
+*.translation
+
+# OS clutter
+.DS_Store
+Thumbs.db
+desktop.ini

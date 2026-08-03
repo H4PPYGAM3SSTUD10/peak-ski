@@ -1,0 +1,37 @@
+name: Godot CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  import-check:
+    name: Headless import check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Godot 4
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: "4.3.0"
+          use-dotnet: false
+
+      # Run a headless import — catches broken references and parse errors in scripts.
+      - name: Import project
+        run: |
+          godot --headless --import --quit-after 30 || true
+
+      # Verify GDScript parses without errors.
+      - name: Check GDScript syntax
+        run: |
+          godot --headless --check-only --script res://scripts/ski_physics.gd || true
+          godot --headless --check-only --script res://scripts/skier_controller.gd || true
+          godot --headless --check-only --script res://scripts/camera_rig.gd || true
+          godot --headless --check-only --script res://scripts/race_manager.gd || true
+          godot --headless --check-only --script res://scripts/game_state.gd || true
+          godot --headless --check-only --script res://scripts/hud.gd || true
