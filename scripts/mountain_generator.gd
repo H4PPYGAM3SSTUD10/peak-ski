@@ -17,10 +17,25 @@ const MAP_HALF_L := 450.0    ## z spans -450 … +450  (start at -z, finish at +
 const CELL       := 6.0      ## heightmap resolution (m). Lower = finer + slower.
 
 # ── Run profile ───────────────────────────────────────────────────────────────
-const SLOPE_TAN    := 0.364  ## tan(20°) — steepness of the main pitch
-const RUNOUT_START := 300.0  ## z where the pitch begins flattening out
-const RUNOUT_LEN   := 140.0  ## how long the flattening takes
+## The run is shaped by a GRADIENT curve that is integrated into heights, so the
+## steepness can be described directly and the profile stays smooth:
+##   -450 … -280   nearly flat run-in — room to get set before committing
+##   -280 … -120   steepening into the pitch
+##   -120 …  250   the steep drop, ~31°
+##    250 …  380   easing out into the flat run-out
+## ~11°. Deliberately not flatter: at 5° the piste's own undulations produce
+## gradients as steep as the slope itself, so the skier settles in a dip and
+## never gets going. This is gentle enough to set up on, steep enough to roll.
+const TAN_GENTLE   := 0.20
+const TAN_STEEP    := 0.60   ## ~31° — the main pitch
+const RUNIN_END    := -280.0
+const STEEP_START  := -120.0
+const RUNOUT_START := 250.0
+const RUNOUT_END   := 380.0
 const END_RISE     := 40.0   ## upslope at the very end, to catch the skier
+
+## Sampling step for the integrated height profile.
+const PROFILE_STEP := 2.0
 
 # ── Valley shape ──────────────────────────────────────────────────────────────
 const PISTE_HALF   := 38.0   ## half-width of the groomed run
@@ -37,13 +52,46 @@ const TREE_COUNT := 420
 
 var _noise := FastNoiseLite.new()
 
+## Integrated height profile of the centreline, sampled every PROFILE_STEP.
+var _profile := PackedFloat32Array()
+
 
 func _ready() -> void:
 	_noise.seed             = 1337
 	_noise.frequency        = 0.006
 	_noise.fractal_octaves  = 4
+	_build_profile()
 	_build_terrain()
 	_scatter_trees()
+
+
+# ── Run profile ───────────────────────────────────────────────────────────────
+
+## Steepness (as a tangent) at a given point down the run.
+func _gradient(z: float) -> float:
+	var g := lerpf(TAN_GENTLE, TAN_STEEP, smoothstep(RUNIN_END, STEEP_START, z))
+	return lerpf(g, 0.0, smoothstep(RUNOUT_START, RUNOUT_END, z))
+
+
+## Integrate the gradient once into a lookup table. Doing it numerically keeps
+## the run shape easy to describe and adjust — change _gradient and the terrain
+## follows, with no piecewise height algebra to get wrong.
+func _build_profile() -> void:
+	_profile.clear()
+	var h := 0.0
+	var z := -MAP_HALF_L
+	while z <= MAP_HALF_L + PROFILE_STEP:
+		_profile.append(h)
+		h -= _gradient(z) * PROFILE_STEP
+		z += PROFILE_STEP
+
+
+func _base_height(z: float) -> float:
+	var f := (clampf(z, -MAP_HALF_L, MAP_HALF_L) + MAP_HALF_L) / PROFILE_STEP
+	var i := int(f)
+	if i >= _profile.size() - 1:
+		return _profile[_profile.size() - 1]
+	return lerpf(_profile[i], _profile[i + 1], f - float(i))
 
 
 # ── The heightmap ─────────────────────────────────────────────────────────────
@@ -51,14 +99,8 @@ func _ready() -> void:
 ## Ground height at any point. This is the single source of truth for the
 ## mountain's shape — the mesh, the collision, and the trees all read from it.
 func height_at(x: float, z: float) -> float:
-	# Main pitch, easing into a flat run-out. Past RUNOUT_LEN the gradient has
-	# reached zero, so the terrain is level from there on.
-	var h := 0.0
-	if z <= RUNOUT_START:
-		h = -SLOPE_TAN * z
-	else:
-		var d := minf(z - RUNOUT_START, RUNOUT_LEN)
-		h = -SLOPE_TAN * RUNOUT_START - SLOPE_TAN * d * (1.0 - d / (2.0 * RUNOUT_LEN))
+	# Flat run-in, steep pitch, then run-out — see _gradient.
+	var h := _base_height(z)
 
 	# Valley walls: flat inside the piste, climbing steeply outside it.
 	var w := smoothstep(PISTE_HALF, PISTE_HALF + WALL_BLEND, absf(x))
@@ -66,7 +108,9 @@ func height_at(x: float, z: float) -> float:
 
 	# Rocky relief on the walls; only gentle rolls on the groomed run.
 	h += _noise.get_noise_2d(x, z) * 22.0 * w
-	h += _noise.get_noise_2d(x * 3.0, z * 3.0) * 0.7 * (1.0 - w)
+	# Kept small: undulations on the groomed run must stay well shallower than
+	# the run-in gradient, or they carve basins the skier can get stuck in.
+	h += _noise.get_noise_2d(x * 3.0, z * 3.0) * 0.35 * (1.0 - w)
 
 	# Jump kicker: ramps up across the piste, then drops away at the lip.
 	if z >= JUMP_Z - JUMP_LEN and z <= JUMP_Z:

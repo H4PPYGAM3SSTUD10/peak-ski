@@ -5,6 +5,8 @@
 [ext_resource type="PackedScene" path="res://scenes/HUD.tscn" id="3"]
 [ext_resource type="PackedScene" path="res://scenes/RaceChallenge.tscn" id="4"]
 [ext_resource type="Script" path="res://scripts/camera_rig.gd" id="5"]
+[ext_resource type="Script" path="res://scripts/pause_menu.gd" id="6"]
+[ext_resource type="Script" path="res://scripts/main.gd" id="7"]
 
 [sub_resource type="ProceduralSkyMaterial" id="sky_mat_1"]
 sky_top_color = Color(0.3, 0.5, 0.85, 1)
@@ -27,6 +29,7 @@ fog_density = 0.003
 fog_aerial_perspective = 0.5
 
 [node name="Main" type="Node3D"]
+script = ExtResource("7")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("env_1")
@@ -55,3 +58,6 @@ fov = 75.0
 [node name="RaceChallenge" parent="." instance=ExtResource("4")]
 
 [node name="HUD" parent="." instance=ExtResource("3")]
+
+[node name="PauseMenu" type="CanvasLayer" parent="."]
+script = ExtResource("6")

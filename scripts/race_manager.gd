@@ -9,6 +9,7 @@ signal countdown_tick(seconds_left: int)
 signal race_started
 signal checkpoint_passed(index: int, total: int)
 signal race_finished(time: float, is_new_record: bool)
+signal race_missed_gates(missed: int, time: float)
 signal race_reset
 
 # ── Exports ───────────────────────────────────────────────────────────────────
@@ -26,6 +27,7 @@ var _state             : State = State.IDLE
 var _elapsed           := 0.0
 var _countdown_elapsed := 0.0
 var _next_checkpoint   := 0
+var _passed_count      := 0
 var _needs_gate_snap   := true
 
 ## How far above the snow a gate's centre sits.
@@ -103,21 +105,30 @@ func _on_start_entered(body: Node3D) -> void:
 		_state             = State.COUNTDOWN
 		_countdown_elapsed = 0.0
 		_next_checkpoint   = 0
+		_passed_count      = 0
 
 
 func _on_checkpoint_entered(body: Node3D, index: int) -> void:
 	if body.is_in_group("skier") and _state == State.RUNNING:
-		if index == _next_checkpoint:
-			_next_checkpoint += 1
+		# Accept any checkpoint at or ahead of the expected one. Requiring an
+		# exact match meant a single missed gate silently ignored every gate
+		# after it, with no feedback, and made the finish unreachable.
+		if index >= _next_checkpoint:
+			_next_checkpoint = index + 1
+			_passed_count   += 1
 			emit_signal("checkpoint_passed", index, checkpoints.size())
 
 
 func _on_finish_entered(body: Node3D) -> void:
 	if body.is_in_group("skier") and _state == State.RUNNING:
-		# Only accept finish if all checkpoints have been hit.
-		if _next_checkpoint < checkpoints.size():
-			return
 		_state = State.FINISHED
+		# A run that skipped gates still ends — it just doesn't set a time.
+		# Silently ignoring the finish line left the player with no idea why
+		# nothing happened.
+		var missed := checkpoints.size() - _passed_count
+		if missed > 0:
+			emit_signal("race_missed_gates", missed, _elapsed)
+			return
 		var is_record := GameState.submit_time(challenge_id, _elapsed)
 		emit_signal("race_finished", _elapsed, is_record)
 
@@ -129,6 +140,7 @@ func reset_race() -> void:
 	_elapsed           = 0.0
 	_countdown_elapsed = 0.0
 	_next_checkpoint   = 0
+	_passed_count      = 0
 	emit_signal("race_reset")
 
 

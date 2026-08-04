@@ -26,9 +26,11 @@ var _needs_ground_snap := true
 
 const WIPEOUT_RECOVER_TIME := 2.5     # seconds before auto-respawn
 
-## Below this world Y the skier has left the map — respawn instead of falling forever.
-## The run-out sits at y ≈ -106, so -250 is safely clear of all real geometry.
-const FALL_LIMIT_Y := -250.0
+## Below this world Y the skier has left the map — respawn instead of falling
+## forever. Must stay well clear of the lowest real ground: the run-out sits at
+## about y = -355, so anything above roughly -400 would teleport a skier who is
+## simply doing the run properly.
+const FALL_LIMIT_Y := -600.0
 
 ## How far above the snow the skier starts. Small enough that the landing never
 ## trips the g-force wipeout.
@@ -114,9 +116,16 @@ func _physics_process(delta: float) -> void:
 		emit_signal("landed", air_time)
 
 	# ── Move ──────────────────────────────────────────────────────────────────
+	# SkiPhysics owns the velocity; move_and_slide is used to move the body and
+	# resolve collisions. We deliberately do NOT take its velocity back on a
+	# normal descent: it re-zeroes the into-floor component every frame, which
+	# on a descending slope bleeds off ~2 m/s² and cancels out slope gravity.
+	# Keeping the skis tangent to the snow is already handled by SkiPhysics.
+	# A wall hit is real, though, so accept the result in that case.
 	velocity = physics.velocity
 	move_and_slide()
-	physics.velocity = velocity   # sync back after collision response
+	if is_on_wall():
+		physics.velocity = velocity
 
 	# ── Orient skier to slope ─────────────────────────────────────────────────
 	var new_basis := physics.ground_aligned_basis(global_transform.basis, ground_normal, delta)

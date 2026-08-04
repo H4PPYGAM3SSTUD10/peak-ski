@@ -80,6 +80,12 @@ func on_race_finished(time: float, is_new_record: bool) -> void:
 		best_time_label.text = "Best: " + _fmt(GameState.get_best_time("mountain_run_01"))
 
 
+func on_race_missed_gates(missed: int, time: float) -> void:
+	_race_running = false
+	_show_banner("Finished in %s — but missed %d gate%s, run not counted"
+		% [_fmt(time), missed, "" if missed == 1 else "s"], Color(1, 0.75, 0.2))
+
+
 func on_race_reset() -> void:
 	_race_running = false
 	_elapsed      = 0.0

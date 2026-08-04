@@ -14,15 +14,22 @@ Built with [Godot 4](https://godotengine.org/) + GDScript.
 
 ## Controls
 
-| Action | Keyboard | Gamepad |
-|--------|----------|---------|
-| Steer left/right | A / D | Left stick |
-| Tuck (speed boost) | W | Left stick down |
-| Edge (slow) | S | Left stick up |
-| Jump | Space | A / Cross |
-| Camera | Mouse | Right stick |
-| Restart | R | Start |
-| Free-ride / Race toggle | Tab | Select |
+| Action | Keyboard |
+|--------|----------|
+| Steer left / right | A / D |
+| Tuck (less drag, more speed) | W |
+| Edge (brake) | S |
+| Jump | Space |
+| Camera orbit / zoom | Mouse / wheel |
+| Respawn at the top | R |
+| Pause menu | Esc |
+
+## The Run
+
+A ~780 m descent: a gentle run-in to get set, steepening into a ~31° pitch with
+a jump kicker, then easing into a flat run-out. Ski through the green start
+gate to begin the timed run, take all four blue checkpoint gates in order, and
+cross the red finish gate. A clean run takes around 25 seconds.
 
 ## Requirements
 

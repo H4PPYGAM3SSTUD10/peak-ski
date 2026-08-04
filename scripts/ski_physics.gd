@@ -38,12 +38,13 @@ const CARVE_SPEED_DAMPEN  := 0.55
 ## actually caps the speed; see SLOPE_GRAVITY for the resulting terminal velocity.
 const AIR_DRAG            := 0.005
 
-## Upward impulse applied when the player presses Jump while grounded.
-const JUMP_IMPULSE        := 7.5
+## Impulse applied off the surface when the player presses Jump while grounded.
+const JUMP_IMPULSE        := 6.5
 
-## Landing g-force threshold above which the skier wipes out (m/s vertical).
-## Keep generous so only truly bad landings punish.
-const WIPEOUT_THRESHOLD   := 18.0
+## Landing threshold, in m/s measured PERPENDICULAR to the surface being landed
+## on. Because it's perpendicular rather than vertical, a fast landing onto a
+## matching slope is survivable and only genuinely flat-on impacts punish.
+const WIPEOUT_THRESHOLD   := 22.0
 
 ## How quickly the skier aligns to the terrain normal (lerp factor per frame).
 const GROUND_ALIGN_SPEED  := 8.0
@@ -53,8 +54,8 @@ const GROUND_ALIGN_SPEED  := 8.0
 ## Instantaneous velocity in world space (m/s).
 var velocity      := Vector3.ZERO
 var is_airborne   := false
-var airborne_time := 0.0   # seconds since last ground contact
-var prev_y_vel    := 0.0   # used to detect landing g-force
+var airborne_time := 0.0        # seconds since last ground contact
+var prev_velocity := Vector3.ZERO  # pre-collision velocity, for landing g-force
 
 # ── Public API ────────────────────────────────────────────────────────────────
 
@@ -72,12 +73,21 @@ func update(
 
 	if is_on_floor:
 		# ── Landing detection ────────────────────────────────────────────────
+		# Impact is the closing speed PERPENDICULAR to the surface, taken from
+		# the pre-collision velocity. Landing onto a slope that matches your
+		# flight path is gentle; slamming flat from height is not.
 		if is_airborne:
-			var impact := absf(prev_y_vel)
+			var impact := absf(prev_velocity.dot(ground_normal))
 			if impact > WIPEOUT_THRESHOLD:
 				wiped_out = true
 			is_airborne   = false
 			airborne_time = 0.0
+
+		# ── Stay on the snow ─────────────────────────────────────────────────
+		# Remove any velocity heading through the surface. Without this, ground
+		# that rises into your path (the valley walls, a terrain facet) acts as
+		# a ramp and flings the skier into the air on an ordinary turn.
+		velocity -= ground_normal * velocity.dot(ground_normal)
 
 		# ── Slope gravity ────────────────────────────────────────────────────
 		# Project gravity onto the slope plane so the skier slides downhill.
@@ -102,8 +112,9 @@ func update(
 			velocity  -= velocity.normalized() * decel
 
 		# ── Jump ─────────────────────────────────────────────────────────────
+		# Applied after the projection above, off the surface you're standing on.
 		if wants_jump:
-			velocity.y   += JUMP_IMPULSE
+			velocity     += ground_normal * JUMP_IMPULSE
 			is_airborne   = true
 			airborne_time = 0.0
 
@@ -123,7 +134,9 @@ func update(
 	if velocity.length() > MAX_SPEED:
 		velocity = velocity.normalized() * MAX_SPEED
 
-	prev_y_vel = velocity.y
+	# Kept for the next frame's landing test: this is the velocity BEFORE
+	# move_and_slide resolves the collision and cancels the normal component.
+	prev_velocity = velocity
 	return wiped_out
 
 

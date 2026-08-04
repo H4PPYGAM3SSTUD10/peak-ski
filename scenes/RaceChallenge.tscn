@@ -3,10 +3,10 @@
 [ext_resource type="Script" path="res://scripts/race_manager.gd" id="1"]
 
 [sub_resource type="BoxShape3D" id="gate_shape"]
-size = Vector3(46, 8, 2)
+size = Vector3(64, 9, 3)
 
 [sub_resource type="BoxMesh" id="gate_mesh"]
-size = Vector3(46, 8, 0.4)
+size = Vector3(64, 9, 0.4)
 
 [sub_resource type="StandardMaterial3D" id="start_mat"]
 albedo_color = Color(0.1, 0.8, 0.1, 0.4)
@@ -34,7 +34,7 @@ surface_material_override/0 = SubResource("start_mat")
 shape = SubResource("gate_shape")
 
 [node name="Checkpoint0" type="Area3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 0, -250)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18, 0, -250)
 
 [node name="Mesh" type="MeshInstance3D" parent="Checkpoint0"]
 mesh = SubResource("gate_mesh")
@@ -44,7 +44,7 @@ surface_material_override/0 = SubResource("check_mat")
 shape = SubResource("gate_shape")
 
 [node name="Checkpoint1" type="Area3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 0, -110)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 0, -110)
 
 [node name="Mesh" type="MeshInstance3D" parent="Checkpoint1"]
 mesh = SubResource("gate_mesh")
@@ -54,7 +54,7 @@ surface_material_override/0 = SubResource("check_mat")
 shape = SubResource("gate_shape")
 
 [node name="Checkpoint2" type="Area3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 0, 30)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0, 30)
 
 [node name="Mesh" type="MeshInstance3D" parent="Checkpoint2"]
 mesh = SubResource("gate_mesh")
@@ -64,7 +64,7 @@ surface_material_override/0 = SubResource("check_mat")
 shape = SubResource("gate_shape")
 
 [node name="Checkpoint3" type="Area3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0, 170)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0, 170)
 
 [node name="Mesh" type="MeshInstance3D" parent="Checkpoint3"]
 mesh = SubResource("gate_mesh")
