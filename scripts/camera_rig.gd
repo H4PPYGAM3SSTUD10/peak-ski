@@ -40,7 +40,7 @@ func _ready() -> void:
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
 		_yaw   -= event.relative.x * rotation_speed
-		_pitch  = clamp(_pitch - event.relative.y * rotation_speed, PITCH_MIN, PITCH_MAX)
+		_pitch  = clampf(_pitch - event.relative.y * rotation_speed, PITCH_MIN, PITCH_MAX)
 		_idle_timer = 0.0
 
 
@@ -55,16 +55,16 @@ func _process(delta: float) -> void:
 	)
 	if stick.length() > 0.15:
 		_yaw   -= stick.x * rotation_speed * 60.0 * delta
-		_pitch  = clamp(_pitch - stick.y * rotation_speed * 60.0 * delta, PITCH_MIN, PITCH_MAX)
+		_pitch  = clampf(_pitch - stick.y * rotation_speed * 60.0 * delta, PITCH_MIN, PITCH_MAX)
 		_idle_timer = 0.0
 	else:
 		_idle_timer += delta
 
 	# ── Scroll wheel zoom ─────────────────────────────────────────────────────
 	if Input.is_action_just_pressed("ui_scroll_up"):
-		arm_length = clamp(arm_length - 1.0, arm_length_min, arm_length_max)
-	if Input.is_action_just_pressed("ui_scroll_down"):
-		arm_length = clamp(arm_length + 1.0, arm_length_min, arm_length_max)
+		arm_length = clampf(arm_length - 1.0, arm_length_min, arm_length_max)
+	elif Input.is_action_just_pressed("ui_scroll_down"):
+		arm_length = clampf(arm_length + 1.0, arm_length_min, arm_length_max)
 	if spring_arm:
 		spring_arm.spring_length = lerp(spring_arm.spring_length, arm_length, 5.0 * delta)
 

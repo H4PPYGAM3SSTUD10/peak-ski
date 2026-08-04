@@ -29,12 +29,27 @@ var _next_checkpoint   := 0
 
 
 func _ready() -> void:
+	# Fall back to finding the gates by node name so the scene works without
+	# hand-authored NodePath exports.
+	if not start_gate:
+		start_gate = get_node_or_null("StartGate")
+	if not finish_gate:
+		finish_gate = get_node_or_null("FinishGate")
+	if checkpoints.is_empty():
+		var i := 0
+		while true:
+			var cp := get_node_or_null("Checkpoint%d" % i) as Area3D
+			if not cp:
+				break
+			checkpoints.append(cp)
+			i += 1
+
 	if start_gate:
 		start_gate.body_entered.connect(_on_start_entered)
 	if finish_gate:
 		finish_gate.body_entered.connect(_on_finish_entered)
-	for i in checkpoints.size():
-		checkpoints[i].body_entered.connect(_on_checkpoint_entered.bind(i))
+	for idx in checkpoints.size():
+		checkpoints[idx].body_entered.connect(_on_checkpoint_entered.bind(idx))
 
 
 func _process(delta: float) -> void:

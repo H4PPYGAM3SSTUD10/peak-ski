@@ -18,10 +18,16 @@ signal landed(airborne_seconds: float)
 var physics       := SkiPhysics.new()
 var _spawn_pos    := Vector3.ZERO
 var _spawn_basis  := Basis.IDENTITY
-var _wipeout      := false
-var _wipeout_timer := 0.0
+var _wipeout          := false
+var _wipeout_timer    := 0.0
+var _was_space_pressed := false
+var _was_r_pressed     := false
 
-const WIPEOUT_RECOVER_TIME := 2.5   # seconds before auto-respawn
+const WIPEOUT_RECOVER_TIME := 2.5     # seconds before auto-respawn
+
+## Below this world Y the skier has left the map — respawn instead of falling forever.
+## The run-out sits at y ≈ -106, so -250 is safely clear of all real geometry.
+const FALL_LIMIT_Y := -250.0
 
 # ── Lifecycle ─────────────────────────────────────────────────────────────────
 
@@ -39,13 +45,21 @@ func _physics_process(delta: float) -> void:
 		_handle_wipeout(delta)
 		return
 
-	# ── Read input ────────────────────────────────────────────────────────────
-	var steer      := Input.get_axis("steer_left", "steer_right")
-	var is_tucking := Input.is_action_pressed("tuck")
-	var is_edging  := Input.is_action_pressed("edge")
-	var wants_jump := Input.is_action_just_pressed("jump") and is_on_floor()
+	# ── Read input (direct key checks — no input map required) ───────────────
+	var steer      := float(Input.is_physical_key_pressed(KEY_D)) - float(Input.is_physical_key_pressed(KEY_A))
+	var is_tucking := Input.is_physical_key_pressed(KEY_W)
+	var is_edging  := Input.is_physical_key_pressed(KEY_S)
+	var wants_jump := Input.is_key_pressed(KEY_SPACE) and not _was_space_pressed and is_on_floor()
+	_was_space_pressed = Input.is_key_pressed(KEY_SPACE)
 
-	if Input.is_action_just_pressed("restart"):
+	if Input.is_key_pressed(KEY_R) and not _was_r_pressed:
+		respawn()
+	_was_r_pressed = Input.is_key_pressed(KEY_R)
+	if _wipeout:
+		return
+
+	# ── Fell off the world? Put the skier back at the top. ───────────────────
+	if global_position.y < FALL_LIMIT_Y:
 		respawn()
 		return
 
@@ -104,7 +118,7 @@ func _start_wipeout() -> void:
 
 func _handle_wipeout(delta: float) -> void:
 	_wipeout_timer += delta
-	if _wipeout_timer >= WIPEOUT_RECOVER_TIME or Input.is_action_just_pressed("restart"):
+	if _wipeout_timer >= WIPEOUT_RECOVER_TIME or Input.is_key_pressed(KEY_R):
 		respawn()
 
 

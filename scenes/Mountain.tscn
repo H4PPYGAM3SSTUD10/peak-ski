@@ -1,5 +1,18 @@
 [gd_scene format=3]
 
+; ─────────────────────────────────────────────────────────────────────────────
+; GEOMETRY CONVENTION
+;   "Slope" is a single StaticBody3D rotated 25° about X.
+;   Everything on the mountain is a CHILD of it, placed in LOCAL coordinates:
+;       local +x = skier's right      local +z = DOWNHILL
+;       local  y = height above the snow surface (surface sits at local y = 0)
+;   Slope runs from local z = -250 (top) to z = +250 (bottom), 500 m long.
+;   World position of a local point (0, 0, z):  y = -0.4226·z,  z = 0.9063·z
+;       top    (z=-250) -> world (0, +105.6, -226.6)
+;       bottom (z=+250) -> world (0, -105.6, +226.6)
+;   The flat RunOut is placed in WORLD space to meet that bottom edge exactly.
+; ─────────────────────────────────────────────────────────────────────────────
+
 [sub_resource type="StandardMaterial3D" id="snow_mat"]
 albedo_color = Color(0.95, 0.97, 1.0, 1)
 roughness = 0.85
@@ -14,89 +27,80 @@ roughness = 0.15
 metallic = 0.2
 
 [sub_resource type="BoxMesh" id="slope_mesh"]
-size = Vector3(120, 2, 300)
+size = Vector3(120, 2, 500)
 
 [sub_resource type="BoxShape3D" id="slope_shape"]
-size = Vector3(120, 2, 300)
+size = Vector3(120, 2, 500)
 
 [sub_resource type="BoxMesh" id="wall_mesh"]
-size = Vector3(3, 12, 300)
+size = Vector3(3, 12, 500)
 
 [sub_resource type="BoxShape3D" id="wall_shape"]
-size = Vector3(3, 12, 300)
+size = Vector3(3, 12, 500)
 
 [sub_resource type="BoxMesh" id="jump_mesh"]
-size = Vector3(30, 1.5, 12)
+size = Vector3(30, 1.5, 16)
 
 [sub_resource type="BoxShape3D" id="jump_shape"]
-size = Vector3(30, 1.5, 12)
-
-[sub_resource type="BoxMesh" id="landing_mesh"]
-size = Vector3(80, 2, 40)
-
-[sub_resource type="BoxShape3D" id="landing_shape"]
-size = Vector3(80, 2, 40)
+size = Vector3(30, 1.5, 16)
 
 [sub_resource type="BoxMesh" id="runout_mesh"]
-size = Vector3(120, 2, 80)
+size = Vector3(120, 2, 120)
 
 [sub_resource type="BoxShape3D" id="runout_shape"]
-size = Vector3(120, 2, 80)
+size = Vector3(120, 2, 120)
 
 [node name="Mountain" type="Node3D"]
 
-[node name="MainSlope" type="StaticBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.906, 0.423, 0, -0.423, 0.906, 0, 0, 0)
+; ── The slope: 25° tilt, descending toward local +z ──────────────────────────
+[node name="Slope" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.9063, 0.4226, 0, -0.4226, 0.9063, 0, 0, 0)
 
-[node name="SlopeMesh" type="MeshInstance3D" parent="MainSlope"]
+; Snow deck — top surface sits at local y = 0
+[node name="SlopeMesh" type="MeshInstance3D" parent="Slope"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
 mesh = SubResource("slope_mesh")
 surface_material_override/0 = SubResource("snow_mat")
 
-[node name="SlopeCollision" type="CollisionShape3D" parent="MainSlope"]
+[node name="SlopeCollision" type="CollisionShape3D" parent="Slope"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
 shape = SubResource("slope_shape")
 
-[node name="LeftWall" type="StaticBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.906, 0.423, 0, -0.423, 0.906, -61, 2, 0)
+; ── Side walls keep the skier on the piste ───────────────────────────────────
+[node name="LeftWall" type="StaticBody3D" parent="Slope"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -61, 5, 0)
 
-[node name="LeftWallMesh" type="MeshInstance3D" parent="LeftWall"]
+[node name="LeftWallMesh" type="MeshInstance3D" parent="Slope/LeftWall"]
 mesh = SubResource("wall_mesh")
 surface_material_override/0 = SubResource("rock_mat")
 
-[node name="LeftWallCollision" type="CollisionShape3D" parent="LeftWall"]
+[node name="LeftWallCollision" type="CollisionShape3D" parent="Slope/LeftWall"]
 shape = SubResource("wall_shape")
 
-[node name="RightWall" type="StaticBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.906, 0.423, 0, -0.423, 0.906, 61, 2, 0)
+[node name="RightWall" type="StaticBody3D" parent="Slope"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 61, 5, 0)
 
-[node name="RightWallMesh" type="MeshInstance3D" parent="RightWall"]
+[node name="RightWallMesh" type="MeshInstance3D" parent="Slope/RightWall"]
 mesh = SubResource("wall_mesh")
 surface_material_override/0 = SubResource("rock_mat")
 
-[node name="RightWallCollision" type="CollisionShape3D" parent="RightWall"]
+[node name="RightWallCollision" type="CollisionShape3D" parent="Slope/RightWall"]
 shape = SubResource("wall_shape")
 
-[node name="JumpRamp" type="StaticBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.766, 0.643, 0, -0.643, 0.766, 0, -20, -80)
+; ── Jump kicker at local z = 40: tilted -14°, lip rises ~3.3 m above snow ────
+[node name="JumpRamp" type="StaticBody3D" parent="Slope"]
+transform = Transform3D(1, 0, 0, 0, 0.9703, -0.2419, 0, 0.2419, 0.9703, 0, 0.6, 40)
 
-[node name="JumpMesh" type="MeshInstance3D" parent="JumpRamp"]
+[node name="JumpMesh" type="MeshInstance3D" parent="Slope/JumpRamp"]
 mesh = SubResource("jump_mesh")
 surface_material_override/0 = SubResource("ice_mat")
 
-[node name="JumpCollision" type="CollisionShape3D" parent="JumpRamp"]
+[node name="JumpCollision" type="CollisionShape3D" parent="Slope/JumpRamp"]
 shape = SubResource("jump_shape")
 
-[node name="LandingZone" type="StaticBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.906, 0.423, 0, -0.423, 0.906, 0, -35, -115)
-
-[node name="LandingMesh" type="MeshInstance3D" parent="LandingZone"]
-mesh = SubResource("landing_mesh")
-surface_material_override/0 = SubResource("snow_mat")
-
-[node name="LandingCollision" type="CollisionShape3D" parent="LandingZone"]
-shape = SubResource("landing_shape")
-
+; ── Flat run-out in WORLD space, butted against the slope's bottom edge ──────
 [node name="RunOut" type="StaticBody3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -80, -200)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -106.6, 286.6)
 
 [node name="RunOutMesh" type="MeshInstance3D" parent="RunOut"]
 mesh = SubResource("runout_mesh")

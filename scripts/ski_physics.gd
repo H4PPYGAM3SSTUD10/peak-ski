@@ -64,7 +64,7 @@ func update(
 	if is_on_floor:
 		# ── Landing detection ────────────────────────────────────────────────
 		if is_airborne:
-			var impact := abs(prev_y_vel)
+			var impact := absf(prev_y_vel)
 			if impact > WIPEOUT_THRESHOLD:
 				wiped_out = true
 			is_airborne   = false
@@ -78,7 +78,7 @@ func update(
 
 		# ── Carving / steering ───────────────────────────────────────────────
 		if steer_input != 0.0 and velocity.length() > 0.5:
-			var speed_factor := 1.0 - clamp(velocity.length() / MAX_SPEED, 0.0, 1.0) * CARVE_SPEED_DAMPEN
+			var speed_factor := 1.0 - clampf(velocity.length() / MAX_SPEED, 0.0, 1.0) * CARVE_SPEED_DAMPEN
 			var carve        := steer_input * CARVE_RATE * speed_factor * delta
 			# Rotate the velocity vector horizontally around the up-axis.
 			velocity = velocity.rotated(ground_normal, -carve)
@@ -87,7 +87,7 @@ func update(
 		var friction := SNOW_FRICTION + (EDGE_FRICTION if is_edging else 0.0)
 		var speed    := velocity.length()
 		if speed > 0.0:
-			var decel := min(friction * delta, speed)
+			var decel := minf(friction * delta, speed)
 			velocity  -= velocity.normalized() * decel
 
 		# ── Jump ─────────────────────────────────────────────────────────────
@@ -100,7 +100,7 @@ func update(
 		# ── Airborne ─────────────────────────────────────────────────────────
 		is_airborne    = true
 		airborne_time += delta
-		# World gravity applied by CharacterBody3D; just track y velocity.
+		velocity.y    -= 9.8 * delta
 
 	# ── Air drag (always) ────────────────────────────────────────────────────
 	var speed_sq := velocity.length_squared()
