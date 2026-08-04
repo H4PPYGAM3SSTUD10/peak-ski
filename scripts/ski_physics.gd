@@ -82,6 +82,8 @@ func update(
 				wiped_out = true
 			is_airborne   = false
 			airborne_time = 0.0
+			
+			
 
 		# ── Stay on the snow ─────────────────────────────────────────────────
 		# Remove any velocity heading through the surface. Without this, ground

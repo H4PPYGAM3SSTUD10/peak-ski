@@ -16,6 +16,10 @@ func _ready() -> void:
 	_connect(skier, "speed_changed",     hud, "on_speed_changed")
 	_connect(skier, "wiped_out",         hud, "on_wiped_out")
 
+	# Respawning (R, or recovering from a wipeout) always puts the run back to
+	# the start line with a fresh countdown and timer.
+	_connect(skier, "respawned",         race, "restart_run")
+
 	_connect(race,  "countdown_tick",    hud, "on_countdown_tick")
 	_connect(race,  "race_started",      hud, "on_race_started")
 	_connect(race,  "checkpoint_passed", hud, "on_checkpoint_passed")

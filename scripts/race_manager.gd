@@ -7,10 +7,10 @@ extends Node3D
 # ── Signals ───────────────────────────────────────────────────────────────────
 signal countdown_tick(seconds_left: int)
 signal race_started
-signal checkpoint_passed(index: int, total: int)
+signal checkpoint_passed(passed: int, total: int)
 signal race_finished(time: float, is_new_record: bool)
 signal race_missed_gates(missed: int, time: float)
-signal race_reset
+signal race_reset(total_checkpoints: int)
 
 # ── Exports ───────────────────────────────────────────────────────────────────
 @export var challenge_id    := "mountain_run_01"
@@ -50,8 +50,11 @@ func _ready() -> void:
 			checkpoints.append(cp)
 			i += 1
 
-	if start_gate:
-		start_gate.body_entered.connect(_on_start_entered)
+	# The start gate is the visual start line only. The run is started by holding
+	# the skier there and counting down (see _begin_countdown) rather than by
+	# driving through it: a lateral drift past the gate, or a previous run left
+	# in the FINISHED state, used to mean the timer simply never started and
+	# there was no way to get it back.
 	if finish_gate:
 		finish_gate.body_entered.connect(_on_finish_entered)
 	for idx in checkpoints.size():
@@ -81,6 +84,32 @@ func _physics_process(_delta: float) -> void:
 	if _needs_gate_snap:
 		_needs_gate_snap = false
 		_snap_gates_to_ground()
+		# Gates are placed and the skier has settled — start the run.
+		_begin_countdown()
+
+
+## The skier, found by group so no scene wiring is needed.
+func _skier() -> Node:
+	return get_tree().get_first_node_in_group("skier")
+
+
+## Put the run back to the start: hold the skier, reset counters, count down.
+func _begin_countdown() -> void:
+	_state             = State.COUNTDOWN
+	_countdown_elapsed = 0.0
+	_elapsed           = 0.0
+	_next_checkpoint   = 0
+	_passed_count      = 0
+	var s := _skier()
+	if s and s.has_method("set_frozen"):
+		s.set_frozen(true)
+	emit_signal("race_reset", checkpoints.size())
+
+
+## Called when the skier respawns (R, or after a wipeout) so a fresh run always
+## gets a fresh timer, whatever state the previous run ended in.
+func restart_run() -> void:
+	_begin_countdown()
 
 
 func _process(delta: float) -> void:
@@ -92,6 +121,9 @@ func _process(delta: float) -> void:
 			if _countdown_elapsed >= countdown_secs:
 				_state   = State.RUNNING
 				_elapsed = 0.0
+				var s := _skier()
+				if s and s.has_method("set_frozen"):
+					s.set_frozen(false)
 				emit_signal("race_started")
 
 		State.RUNNING:
@@ -99,14 +131,6 @@ func _process(delta: float) -> void:
 
 
 # ── Gate callbacks ────────────────────────────────────────────────────────────
-
-func _on_start_entered(body: Node3D) -> void:
-	if body.is_in_group("skier") and _state == State.IDLE:
-		_state             = State.COUNTDOWN
-		_countdown_elapsed = 0.0
-		_next_checkpoint   = 0
-		_passed_count      = 0
-
 
 func _on_checkpoint_entered(body: Node3D, index: int) -> void:
 	if body.is_in_group("skier") and _state == State.RUNNING:
@@ -116,7 +140,9 @@ func _on_checkpoint_entered(body: Node3D, index: int) -> void:
 		if index >= _next_checkpoint:
 			_next_checkpoint = index + 1
 			_passed_count   += 1
-			emit_signal("checkpoint_passed", index, checkpoints.size())
+			# Report how many gates were actually taken, not the gate's index —
+			# the two differ as soon as a gate is skipped.
+			emit_signal("checkpoint_passed", _passed_count, checkpoints.size())
 
 
 func _on_finish_entered(body: Node3D) -> void:
@@ -141,7 +167,7 @@ func reset_race() -> void:
 	_countdown_elapsed = 0.0
 	_next_checkpoint   = 0
 	_passed_count      = 0
-	emit_signal("race_reset")
+	emit_signal("race_reset", checkpoints.size())
 
 
 func get_elapsed() -> float:

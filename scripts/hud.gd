@@ -64,8 +64,8 @@ func on_race_started() -> void:
 		best_time_label.text = ("Best: " + _fmt(best)) if best != INF else "Best: --:--"
 
 
-func on_checkpoint_passed(index: int, total: int) -> void:
-	_checks_hit   = index + 1
+func on_checkpoint_passed(passed: int, total: int) -> void:
+	_checks_hit   = passed
 	_total_checks = total
 	_update_checkpoint_display()
 
@@ -86,13 +86,14 @@ func on_race_missed_gates(missed: int, time: float) -> void:
 		% [_fmt(time), missed, "" if missed == 1 else "s"], Color(1, 0.75, 0.2))
 
 
-func on_race_reset() -> void:
+func on_race_reset(total_checkpoints: int) -> void:
 	_race_running = false
 	_elapsed      = 0.0
+	_checks_hit   = 0
+	_total_checks = total_checkpoints
 	_hide_banner()
 	_update_timer(0.0)
-	if checkpoint_label:
-		checkpoint_label.text = ""
+	_update_checkpoint_display()
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

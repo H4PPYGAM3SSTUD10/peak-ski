@@ -8,6 +8,7 @@ extends CharacterBody3D
 signal speed_changed(kmh: float)
 signal wiped_out
 signal landed(airborne_seconds: float)
+signal respawned
 
 # ── References ────────────────────────────────────────────────────────────────
 @onready var mesh         : MeshInstance3D  = $SkierMesh
@@ -23,6 +24,10 @@ var _wipeout_timer    := 0.0
 var _was_space_pressed := false
 var _was_r_pressed     := false
 var _needs_ground_snap := true
+
+## While held at the start line during the countdown, the skier ignores input
+## and stays put. RaceManager drives this.
+var _frozen := false
 
 const WIPEOUT_RECOVER_TIME := 2.5     # seconds before auto-respawn
 
@@ -72,6 +77,14 @@ func _physics_process(delta: float) -> void:
 	if _needs_ground_snap:
 		_needs_ground_snap = false
 		_snap_to_ground()
+		return
+
+	# Held at the start line: stay put, ignore input, but keep resting on the
+	# snow so the release is from a settled position.
+	if _frozen:
+		velocity         = Vector3.ZERO
+		physics.velocity = Vector3.ZERO
+		move_and_slide()
 		return
 
 	if _wipeout:
@@ -166,10 +179,23 @@ func respawn() -> void:
 	_wipeout = false
 	global_position   = _spawn_pos
 	global_transform.basis = _spawn_basis
+	velocity          = Vector3.ZERO
 	physics.velocity  = Vector3.ZERO
 	physics.is_airborne = false
+	physics.prev_velocity = Vector3.ZERO
 	if mesh:
 		mesh.rotation = Vector3.ZERO
+	# Lets RaceManager put the run back to the start line and count down again.
+	emit_signal("respawned")
+
+
+## Hold / release the skier at the start line.
+func set_frozen(value: bool) -> void:
+	_frozen = value
+	if value:
+		velocity          = Vector3.ZERO
+		physics.velocity  = Vector3.ZERO
+		physics.is_airborne = false
 
 
 # ── Public helpers ────────────────────────────────────────────────────────────

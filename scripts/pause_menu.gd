@@ -10,6 +10,11 @@
 
 extends CanvasLayer
 
+## Pause key. P rather than Esc: on Windows, Esc while the mouse is captured is
+## frequently swallowed by the window before the game sees it, which made the
+## pause toggle feel unreliable.
+const PAUSE_KEY := KEY_P
+
 var _root : Control
 
 
@@ -50,7 +55,7 @@ func _build_ui() -> void:
 	_add_button(box, "Quit",        _on_quit)
 
 	var hint := Label.new()
-	hint.text = "Esc to resume"
+	hint.text = "P to resume"
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint.add_theme_font_size_override("font_size", 16)
 	hint.modulate = Color(1, 1, 1, 0.6)
@@ -70,11 +75,13 @@ func _add_button(parent: Node, label: String, handler: Callable) -> void:
 
 func _input(event: InputEvent) -> void:
 	# Read the key directly rather than via an InputMap action, so the menu
-	# cannot be broken by the project's input configuration.
-	if event is InputEventKey and event.pressed and not event.echo \
-			and event.keycode == KEY_ESCAPE:
-		_set_paused(not get_tree().paused)
-		get_viewport().set_input_as_handled()
+	# cannot be broken by the project's input configuration. Matched on
+	# physical_keycode so it works regardless of keyboard layout.
+	if event is InputEventKey and event.pressed and not event.echo:
+		var key : int = event.physical_keycode if event.physical_keycode != 0 else event.keycode
+		if key == PAUSE_KEY:
+			_set_paused(not get_tree().paused)
+			get_viewport().set_input_as_handled()
 
 
 # ── Actions ───────────────────────────────────────────────────────────────────
