@@ -22,6 +22,7 @@ var _wipeout          := false
 var _wipeout_timer    := 0.0
 var _was_space_pressed := false
 var _was_r_pressed     := false
+var _needs_ground_snap := true
 
 const WIPEOUT_RECOVER_TIME := 2.5     # seconds before auto-respawn
 
@@ -29,10 +30,13 @@ const WIPEOUT_RECOVER_TIME := 2.5     # seconds before auto-respawn
 ## The run-out sits at y ≈ -106, so -250 is safely clear of all real geometry.
 const FALL_LIMIT_Y := -250.0
 
+## How far above the snow the skier starts. Small enough that the landing never
+## trips the g-force wipeout.
+const SPAWN_HEIGHT := 0.5
+
 # ── Lifecycle ─────────────────────────────────────────────────────────────────
 
 func _ready() -> void:
-	_spawn_pos   = global_position
 	_spawn_basis = global_transform.basis
 	# Apply world gravity through CharacterBody3D's built-in handling.
 	up_direction = Vector3.UP
@@ -40,7 +44,29 @@ func _ready() -> void:
 	floor_max_angle     = deg_to_rad(70.0)
 
 
+## Drop the skier onto whatever snow is directly below the spawn node, so the
+## start is never a long fall regardless of where the node was placed in the
+## scene. Runs once, on the first physics frame (the space state isn't
+## queryable yet during _ready).
+func _snap_to_ground() -> void:
+	var space := get_world_3d().direct_space_state
+	var query := PhysicsRayQueryParameters3D.create(
+		global_position + Vector3.UP * 20.0,
+		global_position + Vector3.DOWN * 2000.0
+	)
+	query.exclude = [get_rid()]
+	var hit := space.intersect_ray(query)
+	if hit:
+		global_position = hit.position + Vector3.UP * SPAWN_HEIGHT
+	_spawn_pos = global_position
+
+
 func _physics_process(delta: float) -> void:
+	if _needs_ground_snap:
+		_needs_ground_snap = false
+		_snap_to_ground()
+		return
+
 	if _wipeout:
 		_handle_wipeout(delta)
 		return

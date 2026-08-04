@@ -2,9 +2,6 @@
 
 [ext_resource type="Script" path="res://scripts/race_manager.gd" id="1"]
 
-; Root carries the SAME 25° tilt as Mountain/Slope, so every gate below is
-; placed in slope-local coordinates: +z = downhill, y = height above snow.
-
 [sub_resource type="BoxShape3D" id="gate_shape"]
 size = Vector3(40, 6, 2)
 
