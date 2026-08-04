@@ -42,6 +42,12 @@ func _input(event: InputEvent) -> void:
 		_yaw   -= event.relative.x * rotation_speed
 		_pitch  = clampf(_pitch - event.relative.y * rotation_speed, PITCH_MIN, PITCH_MAX)
 		_idle_timer = 0.0
+	elif event is InputEventMouseButton and event.pressed:
+		# Wheel zoom, read straight from the event — no InputMap actions needed.
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			arm_length = clampf(arm_length - 1.0, arm_length_min, arm_length_max)
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			arm_length = clampf(arm_length + 1.0, arm_length_min, arm_length_max)
 
 
 func _process(delta: float) -> void:
@@ -60,11 +66,6 @@ func _process(delta: float) -> void:
 	else:
 		_idle_timer += delta
 
-	# ── Scroll wheel zoom ─────────────────────────────────────────────────────
-	if Input.is_action_just_pressed("ui_scroll_up"):
-		arm_length = clampf(arm_length - 1.0, arm_length_min, arm_length_max)
-	elif Input.is_action_just_pressed("ui_scroll_down"):
-		arm_length = clampf(arm_length + 1.0, arm_length_min, arm_length_max)
 	if spring_arm:
 		spring_arm.spring_length = lerp(spring_arm.spring_length, arm_length, 5.0 * delta)
 

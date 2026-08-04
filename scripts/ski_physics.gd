@@ -8,17 +8,25 @@ class_name SkiPhysics
 # ── Tuning constants ──────────────────────────────────────────────────────────
 
 ## Gravity scale along the slope (m/s² effective, not world gravity).
-## Lower than real physics = more forgiving, arcade feel.
-const SLOPE_GRAVITY       := 14.0
+## Exaggerated well past real physics — on the 20° piste this gives a pull of
+## ~7.5 m/s², which combined with the drag below settles at a terminal speed of
+## roughly 35 m/s (~125 km/h). Tuned for fun, not realism.
+const SLOPE_GRAVITY       := 22.0
 
-## Maximum speed in m/s when tucked on a steep slope.
-const MAX_SPEED           := 40.0
+## Hard ceiling on speed, m/s.
+const MAX_SPEED           := 42.0
 
 ## Base snow friction deceleration (m/s²). Applied when grounded.
-const SNOW_FRICTION       := 3.5
+## Kept low: friction is a constant decel, so a large value simply stops the
+## skier dead at the bottom of the speed range instead of feeling like snow.
+const SNOW_FRICTION       := 1.2
 
 ## Extra friction when the player edges (hold S).
-const EDGE_FRICTION       := 10.0
+const EDGE_FRICTION       := 12.0
+
+## Drag multipliers while tucked (hold W) — less air resistance, less scrub.
+const TUCK_DRAG_SCALE     := 0.45
+const TUCK_FRICTION_SCALE := 0.8
 
 ## How sharply the skier can carve (rotation rate, rad/s).
 const CARVE_RATE          := 2.8
@@ -26,8 +34,9 @@ const CARVE_RATE          := 2.8
 ## Speed at which carving becomes less effective (encourages tuck at speed).
 const CARVE_SPEED_DAMPEN  := 0.55
 
-## Air drag coefficient — applied as v² force opposite velocity.
-const AIR_DRAG            := 0.012
+## Air drag coefficient — applied as v² force opposite velocity. This is what
+## actually caps the speed; see SLOPE_GRAVITY for the resulting terminal velocity.
+const AIR_DRAG            := 0.005
 
 ## Upward impulse applied when the player presses Jump while grounded.
 const JUMP_IMPULSE        := 7.5
@@ -85,6 +94,8 @@ func update(
 
 		# ── Friction ─────────────────────────────────────────────────────────
 		var friction := SNOW_FRICTION + (EDGE_FRICTION if is_edging else 0.0)
+		if is_tucking:
+			friction *= TUCK_FRICTION_SCALE
 		var speed    := velocity.length()
 		if speed > 0.0:
 			var decel := minf(friction * delta, speed)
@@ -103,9 +114,10 @@ func update(
 		velocity.y    -= 9.8 * delta
 
 	# ── Air drag (always) ────────────────────────────────────────────────────
+	var drag := AIR_DRAG * (TUCK_DRAG_SCALE if is_tucking else 1.0)
 	var speed_sq := velocity.length_squared()
 	if speed_sq > 0.0:
-		velocity -= velocity.normalized() * AIR_DRAG * speed_sq * delta
+		velocity -= velocity.normalized() * drag * speed_sq * delta
 
 	# ── Speed cap ────────────────────────────────────────────────────────────
 	if velocity.length() > MAX_SPEED:

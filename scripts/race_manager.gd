@@ -2,7 +2,7 @@
 ## Manages a race challenge: countdown → running timer → checkpoints → finish.
 ## Attach to the RaceChallenge scene root.  Emits signals consumed by HUD.
 
-extends Node
+extends Node3D
 
 # ── Signals ───────────────────────────────────────────────────────────────────
 signal countdown_tick(seconds_left: int)
@@ -26,15 +26,19 @@ var _state             : State = State.IDLE
 var _elapsed           := 0.0
 var _countdown_elapsed := 0.0
 var _next_checkpoint   := 0
+var _needs_gate_snap   := true
+
+## How far above the snow a gate's centre sits.
+const GATE_HEIGHT := 3.5
 
 
 func _ready() -> void:
 	# Fall back to finding the gates by node name so the scene works without
 	# hand-authored NodePath exports.
 	if not start_gate:
-		start_gate = get_node_or_null("StartGate")
+		start_gate = get_node_or_null("StartGate") as Area3D
 	if not finish_gate:
-		finish_gate = get_node_or_null("FinishGate")
+		finish_gate = get_node_or_null("FinishGate") as Area3D
 	if checkpoints.is_empty():
 		var i := 0
 		while true:
@@ -50,6 +54,31 @@ func _ready() -> void:
 		finish_gate.body_entered.connect(_on_finish_entered)
 	for idx in checkpoints.size():
 		checkpoints[idx].body_entered.connect(_on_checkpoint_entered.bind(idx))
+
+
+## Drop every gate onto the terrain on the first physics frame, so gate heights
+## never have to be hand-authored to match the mountain.
+func _snap_gates_to_ground() -> void:
+	var space := get_world_3d().direct_space_state
+	var gates : Array[Area3D] = []
+	if start_gate:
+		gates.append(start_gate)
+	gates.append_array(checkpoints)
+	if finish_gate:
+		gates.append(finish_gate)
+
+	for gate in gates:
+		var from := Vector3(gate.global_position.x, 500.0, gate.global_position.z)
+		var to   := Vector3(gate.global_position.x, -1000.0, gate.global_position.z)
+		var hit  := space.intersect_ray(PhysicsRayQueryParameters3D.create(from, to))
+		if hit:
+			gate.global_position = hit.position + Vector3.UP * GATE_HEIGHT
+
+
+func _physics_process(_delta: float) -> void:
+	if _needs_gate_snap:
+		_needs_gate_snap = false
+		_snap_gates_to_ground()
 
 
 func _process(delta: float) -> void:

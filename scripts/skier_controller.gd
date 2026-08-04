@@ -42,6 +42,11 @@ func _ready() -> void:
 	up_direction = Vector3.UP
 	floor_stop_on_slope = false
 	floor_max_angle     = deg_to_rad(70.0)
+	# Keep the skis glued to the snow over the terrain's facets and small rolls.
+	# Without this the skier skips into the air on every bump, loses slope
+	# gravity, and never builds speed. Still short enough that the jump kicker
+	# (a ~5 m drop past the lip) launches properly.
+	floor_snap_length   = 2.0
 
 
 ## Drop the skier onto whatever snow is directly below the spawn node, so the
